@@ -1,0 +1,35 @@
+[theme]
+# Definir tema claro como padrão
+base = "light"
+
+# Cor primária (verde)
+primaryColor = "#76B82A"
+
+# Cor secundária
+secondaryBackgroundColor = "#f2f2f2"
+
+# Cor de texto
+textColor = "#111111"
+
+# Cor de fundo
+backgroundColor = "#FFFFFF"
+
+# Cor para destacar elementos
+accentColor = "#76B82A"
+
+# Fonte padrão
+font = "sans serif"
+
+[server]
+# Configurações do servidor
+enableCORS = true
+enableXsrfProtection = true
+
+[browser]
+# Configurações do navegador
+serverAddress = "localhost"
+gatherUsageStats = false
+
+[deprecation]
+# Desativar avisos de depreciação
+showPyplotGlobalUse = false
