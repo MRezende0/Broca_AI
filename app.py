@@ -184,7 +184,7 @@ st.markdown("""
     
     /* Estilo das tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
+        gap: 16px;
     }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
@@ -192,13 +192,24 @@ st.markdown("""
         background-color: #f0f2f6; /* Cinza claro */
         border-radius: 4px 4px 0px 0px;
         gap: 1px;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        padding-left: 20px;
+        padding-right: 20px;
         color: #111111 !important;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        border: 1px solid transparent;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #76B82A !important; /* Verde claro principal */
-        color: white !important;
+        background-color:rgb(220, 240, 197) !important; /* Verde claro principal */
+        color: #2E7D32 !important; /* Verde escuro para melhor contraste */
+        border-bottom: 2px solid #76B82A;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Efeito hover para as abas não selecionadas */
+    .stTabs [data-baseweb="tab"]:not([aria-selected="true"]):hover {
+        background-color: #e8e8e8;
+        border-bottom: 1px solid #76B82A;
     }
     
     /* Estilo dos links na sidebar */
@@ -459,7 +470,7 @@ def show_sidebar():
             st.markdown("<hr style='margin: 5px 0; border: 0; border-top: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
             
             # Menu de navegação mais compacto
-            st.markdown("<p style='margin-bottom: 5px; font-weight: bold; color: #555;'>Menu</p>", unsafe_allow_html=True)
+            st.markdown("<p style='margin-bottom: 5px; font-weight: bold; color: #555;'></p>", unsafe_allow_html=True)
             
             menu_options = ["Registrar"]
             if st.session_state.role == "admin":
@@ -511,15 +522,15 @@ def show_sidebar():
             # Adicionar espaço antes do botão de logout
             st.markdown("<div style='height: 5px;'></div>", unsafe_allow_html=True)
             
-            # Criar colunas para centralizar o botão
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
-                # Botão de logout menor e com borda vermelha
-                if st.button("Sair", key="logout_btn", use_container_width=False):
-                    logout()
-                    st.rerun()
-        else:
-            st.info("Faça login para acessar o sistema")
+            # # Criar colunas para centralizar o botão
+            # col1, col2, col3 = st.columns([1, 1, 1])
+            # with col2:
+            #     # Botão de logout menor e com borda vermelha
+            #     if st.button("Sair", key="logout_btn", use_container_width=False):
+            #         logout()
+            #         st.rerun()
+        # else:
+        #     st.info("Faça login para acessar o sistema")
 
 # CSS personalizado para os inputs na tela de login
 login_input_style = """
@@ -538,12 +549,41 @@ login_input_style = """
     
     /* Centralizar o botão de login */
     div[data-testid="column"] [data-testid="stButton"] {
-        display: flex;
-        justify-content: center;
+        display: flex !important;
+        justify-content: center !important;
     }
     
-    /* Apenas o botão de login será verde */
-    div[data-testid="column"] [data-testid="stButton"] button {
+    /* Estilo específico para o botão de login */
+    /* Usar seletores mais específicos para garantir que o estilo seja aplicado */
+    div[data-testid="column"] [data-testid="stButton"] button,
+    .main button[kind="primary"],
+    .main button[kind="secondary"],
+    .main button {
+        background-color: #76B82A !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 500 !important;
+        box-shadow: none !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Efeito hover para o botão de login */
+    div[data-testid="column"] [data-testid="stButton"] button:hover,
+    .main button:hover {
+        background-color: #68a526 !important;
+        color: white !important;
+    }
+    
+    /* Remover qualquer estilo do tema que possa interferir */
+    .stApp button[data-testid="baseButton-primary"] {
+        background-color: #76B82A !important;
+        color: white !important;
+    }
+    
+    /* Seletor super específico para o botão de login usando sua chave */
+    button[kind="secondary"][data-testid="baseButton-secondary"],
+    [data-testid="stButton"][key="login_button"] button,
+    button[data-baseweb="button"] {
         background-color: #76B82A !important;
         color: white !important;
         border: none !important;
@@ -553,35 +593,28 @@ login_input_style = """
 
 # Página de login
 if not st.session_state.authenticated:
-    # Ocultar a sidebar na tela de login
-    st.markdown("""
-    <style>
-        [data-testid="stSidebar"] {display: none !important;}
-        section.main > div {padding-left: 1rem !important; padding-right: 1rem !important;}
-        .stApp {max-width: 100%; padding-top: 2rem !important;}
-    </style>
-    """, unsafe_allow_html=True)
-    
     # Aplicar estilo personalizado aos inputs
     st.markdown(login_input_style, unsafe_allow_html=True)
     
-    # Logo da Cocal no topo centralizada com tamanho fixo
-    logo_col1, logo_col2, logo_col3 = st.columns([1, 1, 1])
-    with logo_col2:
-        logo_path = os.path.join("imagens", "logo-cocal.png")
-        if os.path.exists(logo_path):
-            # Usar HTML direto para controlar o tamanho da imagem
-            img = Image.open(logo_path)
-            buffered = io.BytesIO()
-            img.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            # Definir um tamanho fixo em pixels para a logo
-            st.markdown(f"""
-            <div style="display: flex; justify-content: center;">
-                <img src="data:image/png;base64,{img_str}" width="200px">
-            </div>
-            """, unsafe_allow_html=True)
+    # Criar um container principal para centralizar todo o conteúdo
+    with st.container():
+        # Logo da Cocal centralizada com tamanho fixo
+        logo_col1, logo_col2, logo_col3 = st.columns([1, 1, 1])
+        with logo_col2:
+            logo_path = os.path.join("imagens", "logo-cocal.png")
+            if os.path.exists(logo_path):
+                # Usar HTML direto para controlar o tamanho da imagem
+                img = Image.open(logo_path)
+                buffered = io.BytesIO()
+                img.save(buffered, format="PNG")
+                img_str = base64.b64encode(buffered.getvalue()).decode()
+                
+                # Definir um tamanho fixo em pixels para a logo
+                st.markdown(f"""
+                <div style="display: flex; justify-content: center;">
+                    <img src="data:image/png;base64,{img_str}" width="180px">
+                </div>
+                """, unsafe_allow_html=True)
     
     # Container centralizado para o login
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -590,33 +623,62 @@ if not st.session_state.authenticated:
         st.markdown("<h1 style='text-align: center; color: #76B82A;'>Broca AI</h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; font-size: 1.2em;'>Sistema de detecção e quantificação da broca</p>", unsafe_allow_html=True)
         
-        # Espaço entre o título e os campos de login
-        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        # Espaço entre o título e os campos de login (reduzido)
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
         
         # Campos de login sem a caixa
         username = st.text_input("Usuário", key="login_username")
         password = st.text_input("Senha", type="password", key="login_password")
         
         # Botão de login centralizado
-        login_col1, login_col2, login_col3 = st.columns([1, 1, 1])
+        login_col1, login_col2, login_col3 = st.columns([1, 1.5, 1])
         
         with login_col2:
-            if st.button("Login", use_container_width=True):
+            # Usar markdown com HTML para criar um botão personalizado com estilo inline
+            login_button_html = '''
+            <button type="button" id="custom_login_button" 
+                style="
+                    background-color: #76B82A; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 4px; 
+                    padding: 0.5rem 1rem; 
+                    font-size: 1rem; 
+                    font-weight: 500; 
+                    cursor: pointer; 
+                    width: 100%;
+                    transition: background-color 0.3s ease;"
+                onmouseover="this.style.backgroundColor='#68a526'" 
+                onmouseout="this.style.backgroundColor='#76B82A'"
+            >
+                Login
+            </button>
+            <script>
+                document.getElementById("custom_login_button").addEventListener("click", function() {
+                    // Simular clique no botão escondido do Streamlit
+                    document.querySelector('button[data-testid="baseButton-secondary"]').click();
+                });
+            </script>
+            '''
+            
+            # Botão escondido do Streamlit para manter a funcionalidade
+            login_clicked = st.button("Login", use_container_width=True, key="login_button", label_visibility="collapsed")
+            
+            # Exibir o botão personalizado
+            st.markdown(login_button_html, unsafe_allow_html=True)
+            
+            # Verificar se o botão foi clicado
+            if login_clicked:
                 if not username or not password:
-                    st.error("Por favor, preencha todos os campos")
+                    st.error("Preencha os campos!")
                 else:
-                    # A função authenticate agora configura diretamente as variáveis de sessão
+                    # A função authenticate configura diretamente as variáveis de sessão
                     auth_success = authenticate(username, password)
                     if auth_success:
                         # A função authenticate já configurou as variáveis de sessão
                         st.rerun()
                     else:
                         st.error("Usuário ou senha incorretos")
-            
-        # Informações de ajuda
-        st.markdown("""<div style="margin-top: 20px; text-align: center; font-size: 0.8em;">
-            <p>Em caso de problemas, contate o administrador do sistema</p>
-        </div>""", unsafe_allow_html=True)
 
 # Página de registro de imagens
 elif st.session_state.current_page == "registrar":
@@ -631,7 +693,6 @@ elif st.session_state.current_page == "registrar":
     with tab1:
         # Container para o formulário de captura
         with st.container():
-            st.markdown("<div style='background-color: #f9f9f9; padding: 20px; border-radius: 10px;'>", unsafe_allow_html=True)
             st.markdown("<h3 style='color: #76B82A;'>Captura de Imagem para Análise</h3>", unsafe_allow_html=True)
             
             # Opções de captura de imagem

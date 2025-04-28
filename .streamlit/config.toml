@@ -12,10 +12,9 @@ secondaryBackgroundColor = "#f2f2f2"
 textColor = "#111111"
 
 # Cor de fundo
-backgroundColor = "#FFFFFF"
+backgroundColor = "#ffffff"
 
-# Cor para destacar elementos
-accentColor = "#76B82A"
+# Cor para destacar elementos (usando primaryColor como substituto)
 
 # Fonte padrão
 font = "sans serif"
@@ -30,6 +29,3 @@ enableXsrfProtection = true
 serverAddress = "localhost"
 gatherUsageStats = false
 
-[deprecation]
-# Desativar avisos de depreciação
-showPyplotGlobalUse = false
