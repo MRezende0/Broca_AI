@@ -634,38 +634,27 @@ if not st.session_state.authenticated:
         login_col1, login_col2, login_col3 = st.columns([1, 1.5, 1])
         
         with login_col2:
-            # Usar markdown com HTML para criar um botão personalizado com estilo inline
-            login_button_html = '''
-            <button type="button" id="custom_login_button" 
-                style="
-                    background-color: #76B82A; 
-                    color: white; 
-                    border: none; 
-                    border-radius: 4px; 
-                    padding: 0.5rem 1rem; 
-                    font-size: 1rem; 
-                    font-weight: 500; 
-                    cursor: pointer; 
-                    width: 100%;
-                    transition: background-color 0.3s ease;"
-                onmouseover="this.style.backgroundColor='#68a526'" 
-                onmouseout="this.style.backgroundColor='#76B82A'"
-            >
-                Login
-            </button>
-            <script>
-                document.getElementById("custom_login_button").addEventListener("click", function() {
-                    // Simular clique no botão escondido do Streamlit
-                    document.querySelector('button[data-testid="baseButton-secondary"]').click();
-                });
-            </script>
-            '''
+            # Botão de login estilizado com CSS
+            st.markdown("""
+            <style>
+            div[data-testid="stButton"] > button {
+                background-color: #76B82A;
+                color: white;
+                font-weight: bold;
+                border: none;
+                padding: 10px 24px;
+                border-radius: 4px;
+                width: 100%;
+                transition: background-color 0.3s;
+            }
+            div[data-testid="stButton"] > button:hover {
+                background-color: #68a526;
+            }
+            </style>
+            """, unsafe_allow_html=True)
             
-            # Botão escondido do Streamlit para manter a funcionalidade
-            login_clicked = st.button("Login", use_container_width=True, key="login_button", label_visibility="collapsed")
-            
-            # Exibir o botão personalizado
-            st.markdown(login_button_html, unsafe_allow_html=True)
+            # Botão de login do Streamlit com estilo personalizado
+            login_clicked = st.button("Login", use_container_width=True, key="login_button")
             
             # Verificar se o botão foi clicado
             if login_clicked:
