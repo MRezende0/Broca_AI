@@ -21,6 +21,132 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Código JavaScript para obter a localização do usuário
+location_js = """
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(savePosition, showError);
+    } else {
+        console.log("Geolocalização não é suportada por este navegador.");
+        document.getElementById('geolocation_data').innerText = JSON.stringify({"error": "Geolocalização não suportada"});
+    }
+}
+
+function savePosition(position) {
+    const locationData = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: new Date().toISOString()
+    };
+    document.getElementById('geolocation_data').innerText = JSON.stringify(locationData);
+    // Disparar um evento para notificar que a localização foi obtida
+    const event = new CustomEvent('locationUpdated');
+    window.dispatchEvent(event);
+}
+
+function showError(error) {
+    let errorMessage = "";
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            errorMessage = "Usuário negou a solicitação de geolocalização.";
+            break;
+        case error.POSITION_UNAVAILABLE:
+            errorMessage = "Informação de localização indisponível.";
+            break;
+        case error.TIMEOUT:
+            errorMessage = "A solicitação para obter a localização expirou.";
+            break;
+        case error.UNKNOWN_ERROR:
+            errorMessage = "Ocorreu um erro desconhecido.";
+            break;
+    }
+    document.getElementById('geolocation_data').innerText = JSON.stringify({"error": errorMessage});
+}
+
+// Executar quando a página carregar
+window.onload = function() {
+    // Criar elemento para armazenar os dados de localização
+    if (!document.getElementById('geolocation_data')) {
+        const dataElement = document.createElement('div');
+        dataElement.id = 'geolocation_data';
+        dataElement.style.display = 'none';
+        document.body.appendChild(dataElement);
+    }
+    // Obter localização automaticamente
+    getLocation();
+};
+</script>
+<div id="geolocation_data" style="display: none;"></div>
+"""
+
+# Injetar o código JavaScript
+st.markdown(location_js, unsafe_allow_html=True)
+
+# Função para obter os dados de localização do elemento HTML
+def get_location_data():
+    # Código JavaScript para ler os dados de localização do elemento HTML
+    get_location_script = """
+    <script>
+    if (window.parent.document.getElementById('geolocation_data')) {
+        var locationData = window.parent.document.getElementById('geolocation_data').innerText;
+        window.parent.document.getElementById('location_data_streamlit').innerText = locationData;
+    }
+    </script>
+    <div id="location_data_streamlit" style="display:none;"></div>
+    """
+    
+    # Injetar o script e criar um elemento para receber os dados
+    st.markdown(get_location_script, unsafe_allow_html=True)
+    
+    # Usar componente HTML para obter os dados
+    components_placeholder = st.empty()
+    components_placeholder.markdown("<div id='location_data_container'></div>", unsafe_allow_html=True)
+    
+    # Tentar ler os dados de localização usando session_state
+    if 'location_data' not in st.session_state:
+        st.session_state.location_data = None
+    
+    # Usar JavaScript para atualizar os dados de localização na session_state
+    update_location_script = """
+    <script>
+    function updateLocationData() {
+        if (window.parent.document.getElementById('geolocation_data')) {
+            var locationData = window.parent.document.getElementById('geolocation_data').innerText;
+            if (locationData) {
+                const streamlitDoc = window.parent.document;
+                const locationDataInput = streamlitDoc.getElementById('location_data_input');
+                if (locationDataInput) {
+                    locationDataInput.value = locationData;
+                    locationDataInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        }
+        setTimeout(updateLocationData, 1000); // Verificar a cada segundo
+    }
+    updateLocationData();
+    </script>
+    """
+    
+    # Criar um input escondido para receber os dados de localização
+    location_data_str = st.text_input("location_data", value="", key="location_data_input", label_visibility="collapsed")
+    
+    # Injetar o script para atualizar os dados
+    st.markdown(update_location_script, unsafe_allow_html=True)
+    
+    # Tentar analisar os dados de localização
+    if location_data_str:
+        try:
+            location_data = json.loads(location_data_str)
+            st.session_state.location_data = location_data
+            return location_data
+        except json.JSONDecodeError:
+            return None
+    
+    # Retornar os dados armazenados na session_state se estiverem disponíveis
+    return st.session_state.location_data
+
 # Aplicar CSS personalizado para os botões da sidebar
 st.markdown("""
 <style>
@@ -620,7 +746,7 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col2:
-        st.markdown("<h1 style='text-align: center; color: #76B82A;'>Broca AI</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #76B82A; font-size: 40px; font-weight: bold; margin: 0; padding-top: 15px;'>Broca AI</p>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; font-size: 1.2em;'>Sistema de detecção e quantificação da broca</p>", unsafe_allow_html=True)
         
         # Espaço entre o título e os campos de login (reduzido)
@@ -631,7 +757,7 @@ if not st.session_state.authenticated:
         password = st.text_input("Senha", type="password", key="login_password")
         
         # Botão de login centralizado
-        login_col1, login_col2, login_col3 = st.columns([1, 1.5, 1])
+        login_col1, login_col2, login_col3 = st.columns([1, 2, 1])
         
         with login_col2:
             # Botão de login estilizado com CSS
@@ -753,6 +879,25 @@ elif st.session_state.current_page == "registrar":
                 
                 notes = st.text_area("Observações", placeholder="Insira observações adicionais aqui...")
                 
+                # Obter dados de localização geográfica
+                geo_location = get_location_data()
+                
+                # Exibir informações de localização se disponíveis
+                if geo_location and 'error' not in geo_location:
+                    st.success(f"Localização GPS capturada: {geo_location.get('latitude', 'N/A')}, {geo_location.get('longitude', 'N/A')}")
+                    # Adicionar um mapa pequeno mostrando a localização
+                    if 'latitude' in geo_location and 'longitude' in geo_location:
+                        map_data = pd.DataFrame({
+                            'lat': [geo_location['latitude']],
+                            'lon': [geo_location['longitude']]
+                        })
+                        st.map(map_data, zoom=13)
+                elif geo_location and 'error' in geo_location:
+                    st.warning(f"Não foi possível obter a localização: {geo_location['error']}")
+                    st.info("Você pode continuar sem os dados de localização ou permitir o acesso à localização e recarregar a página.")
+                else:
+                    st.info("Aguardando dados de localização... Se não aparecer, verifique se permitiu o acesso à localização no navegador.")
+                
                 # Botão de processamento
                 process_button = st.button("Processar Imagem", type="primary", use_container_width=True)
                 
@@ -776,11 +921,22 @@ elif st.session_state.current_page == "registrar":
                             original_path = save_image(image, original_filename)
                             processed_path = save_image(result_image, processed_filename)
                             
+                            # Preparar dados de geolocalização para o registro
+                            geo_data = None
+                            if geo_location and 'error' not in geo_location:
+                                geo_data = {
+                                    'latitude': geo_location.get('latitude'),
+                                    'longitude': geo_location.get('longitude'),
+                                    'accuracy': geo_location.get('accuracy'),
+                                    'timestamp': geo_location.get('timestamp')
+                                }
+                            
                             # Criar registro
                             new_record = {
                                 "id": image_id,
                                 "date": collection_date.strftime("%Y-%m-%d"),
                                 "location": location,
+                                "geo_location": geo_data,  # Adicionar dados de geolocalização
                                 "user": st.session_state.username,
                                 "num_detections": count,
                                 "original_image": original_path,
@@ -834,29 +990,46 @@ elif st.session_state.current_page == "registrar":
                 st.markdown(f"""
                 <div style="padding: 15px; border-radius: 5px; background-color: #f9f9f9;">
                     <h4 style="color: #76B82A; margin-top: 0;">Brocas Detectadas</h4>
-                    <p style="font-size: 24px; font-weight: bold; color: #111111;">{record['broca_count']}</p>
+                    <p style="font-size: 24px; font-weight: bold; color: #111111;">{record['num_detections']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             
             with info_cols[1]:
                 st.markdown(f"""
                 <div style="padding: 15px; border-radius: 5px; background-color: #f9f9f9;">
-                    <h4 style="color: #76B82A; margin-top: 0;">Local</h4>
+                    <h4 style="color: #76B82A; margin-top: 0;">Local da Coleta</h4>
                     <p style="font-size: 18px; color: #111111;">{record['location']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             
             with info_cols[2]:
-                # Formatar a data/hora para exibição
-                collection_dt = datetime.datetime.fromisoformat(record.get('collection_datetime', record['timestamp']))
-                formatted_dt = collection_dt.strftime("%d/%m/%Y %H:%M")
-                
                 st.markdown(f"""
                 <div style="padding: 15px; border-radius: 5px; background-color: #f9f9f9;">
-                    <h4 style="color: #76B82A; margin-top: 0;">Data/Hora da Coleta</h4>
-                    <p style="font-size: 18px; color: #111111;">{formatted_dt}</p>
+                    <h4 style="color: #76B82A; margin-top: 0;">Data da Coleta</h4>
+                    <p style="font-size: 18px; font-weight: bold; color: #111111;">{record['date']}</p>
                 </div>
                 """, unsafe_allow_html=True)
+                
+            # Exibir dados de localização geográfica se disponíveis
+            if 'geo_location' in record and record['geo_location']:
+                st.markdown("<h4 style='color: #76B82A; margin-top: 20px;'>Localização Geográfica</h4>", unsafe_allow_html=True)
+                
+                # Exibir mapa com a localização
+                geo_data = record['geo_location']
+                map_data = pd.DataFrame({
+                    'lat': [geo_data['latitude']],
+                    'lon': [geo_data['longitude']]
+                })
+                st.map(map_data, zoom=13)
+                
+                # Exibir detalhes da localização
+                geo_cols = st.columns(3)
+                with geo_cols[0]:
+                    st.metric("Latitude", f"{geo_data['latitude']:.6f}")
+                with geo_cols[1]:
+                    st.metric("Longitude", f"{geo_data['longitude']:.6f}")
+                with geo_cols[2]:
+                    st.metric("Precisão", f"{geo_data['accuracy']:.1f} m" if 'accuracy' in geo_data else "N/A")
             
             # Exibir dados detalhados das detecções
             if 'detection_data' in record and record['detection_data']:
